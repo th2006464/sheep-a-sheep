@@ -10,28 +10,36 @@
 <link rel="manifest" href="manifest.webmanifest">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
-  html,body { width:100%; height:100%; overflow:hidden; background:#4ca43a; font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; touch-action:manipulation; }
-  #viewport { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#2f7a26; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#a8db5e; font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; touch-action:manipulation; }
+  #viewport { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#a8db5e; }
+  /* 原版草地背景:全屏铺满(cover 缩放,无黑边/绿框) */
   #stage { position:relative; width:750px; height:1334px; transform-origin:center center; overflow:hidden;
-           background:linear-gradient(#7ecb5f,#5aab3e 55%,#4a9a35); }
+           background:
+             radial-gradient(140px 90px at 12% 22%, rgba(255,255,255,.10), transparent 70%),
+             radial-gradient(180px 110px at 85% 45%, rgba(70,130,30,.12), transparent 70%),
+             radial-gradient(160px 100px at 25% 68%, rgba(70,130,30,.10), transparent 70%),
+             linear-gradient(#c2ea7d 0%, #b4e36a 30%, #a8db5e 60%, #9cd254 100%); }
 
-  /* 顶部信息栏 */
-  #hud { position:absolute; top:0; left:0; right:0; height:110px; padding:34px 24px 0; display:flex; align-items:center; justify-content:space-between; z-index:900; }
-  .hud-left { display:flex; align-items:center; gap:14px; }
-  #levelTag { background:rgba(0,0,0,.28); color:#fff; font-size:30px; font-weight:600; padding:12px 26px; border-radius:32px; letter-spacing:2px; }
-  #bgmBtn { width:72px; height:72px; border:none; border-radius:50%; background:rgba(0,0,0,.28); color:#fff; font-size:34px; cursor:pointer; }
-  .props { display:flex; gap:18px; }
-  .prop-btn { position:relative; width:96px; height:96px; border:none; border-radius:20px; background:rgba(255,255,255,.92); box-shadow:0 4px 0 rgba(0,0,0,.18); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; transition:transform .08s; }
-  .prop-btn:active { transform:scale(.92); }
-  .prop-btn img { width:52px; height:52px; object-fit:contain; pointer-events:none; }
-  .prop-btn .p-name { font-size:17px; color:#5a4a3a; font-weight:600; pointer-events:none; }
-  .prop-btn .p-cnt { position:absolute; top:-8px; right:-8px; min-width:34px; height:34px; border-radius:17px; background:#f9542f; color:#fff; font-size:19px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 6px; border:2px solid #fff; }
-  .prop-btn.disabled { filter:grayscale(1); opacity:.55; }
+  /* 顶部:黑色胶囊横幅(原版样式) + 左设置/右退出 */
+  #hud { position:absolute; top:0; left:0; right:0; height:150px; z-index:900; pointer-events:none; }
+  #levelTag { position:absolute; top:26px; left:50%; transform:translateX(-50%); background:#1d1a16; color:#fff; font-size:30px; font-weight:700; padding:14px 44px; border-radius:40px; letter-spacing:4px; border:3px solid #4c443a; box-shadow:0 4px 10px rgba(0,0,0,.3); }
+  #levelTag::after { content:""; position:absolute; bottom:-26px; left:50%; transform:translateX(-50%); width:16px; height:26px; background:#1d1a16; border:3px solid #4c443a; border-top:none; border-radius:0 0 8px 8px; }
+  #bgmBtn { position:absolute; top:24px; left:24px; width:72px; height:72px; border:none; border-radius:16px; background:linear-gradient(#59a7f0,#2e86e0); color:#fff; font-size:32px; cursor:pointer; box-shadow:0 4px 0 #1c5a9a, inset 0 2px 4px rgba(255,255,255,.4); pointer-events:auto; }
+  #bgmBtn:active { transform:translateY(2px); }
+  #exitBtn { position:absolute; top:24px; right:24px; width:69px; height:73px; border:none; background:url('assets/ui/exit.png') center/contain no-repeat; cursor:pointer; pointer-events:auto; transition:transform .08s; }
+  #exitBtn:active { transform:scale(.9); }
 
-  /* 棋盘区 */
-  #board { position:absolute; left:0; top:120px; width:750px; height:830px; z-index:10;
-           background-image:url('assets/wallpaper.png'); background-size:cover; background-position:center; }
-  #board::after { content:""; position:absolute; inset:0; background:rgba(30,90,20,.18); pointer-events:none; }
+  /* 底部:原版蓝色道具按钮(propBtn 贴图) */
+  #propsBar { position:absolute; left:0; right:0; bottom:26px; display:flex; justify-content:center; gap:46px; z-index:900; }
+  .prop-btn { position:relative; width:184px; height:122px; border:none; background:url('assets/ui/propBtn.png') center/100% 100% no-repeat; cursor:pointer; transition:transform .08s; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .prop-btn:active { transform:scale(.93); }
+  .prop-btn .p-icon { width:58px; height:58px; object-fit:contain; pointer-events:none; margin-bottom:2px; }
+  .prop-btn .p-name { font-size:26px; font-weight:800; color:#fff; letter-spacing:3px; text-shadow:0 2px 0 rgba(0,0,0,.35); pointer-events:none; }
+  .prop-btn .p-cnt { position:absolute; top:-14px; right:-6px; min-width:44px; height:44px; border-radius:22px; background:#1d1a16; color:#ffd94e; font-size:24px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 10px; border:3px solid #fff; font-family:Arial; }
+  .prop-btn.disabled { filter:grayscale(.9) brightness(.75); }
+
+  /* 棋盘区:方块直接堆在草地上(原版样式,无壁纸) */
+  #board { position:absolute; left:0; top:160px; width:750px; height:800px; z-index:10; }
   .block { position:absolute; width:120px; height:135px; transform-origin:center; cursor:pointer; will-change:transform,opacity; }
   .block img { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
   .block .mask { opacity:0; transition:opacity .25s; }
@@ -39,16 +47,27 @@
   .block.enter { animation:dropIn .5s cubic-bezier(.3,1.4,.6,1) backwards; }
   @keyframes dropIn { from { transform:translateY(-560px) scale(1); opacity:0; } }
 
-  /* 暂存区(移出道具) */
-  #moveoutArea { position:absolute; left:0; right:0; top:960px; height:130px; display:none; justify-content:center; gap:220px; z-index:500; }
+  /* 暂存区(移出道具,位于槽位栏上方) */
+  #moveoutArea { position:absolute; left:0; right:0; top:935px; height:130px; display:none; justify-content:center; gap:220px; z-index:500; }
   #moveoutArea.show { display:flex; }
   .mo-col { position:relative; width:130px; height:130px; }
   .mo-col .block { width:104px; height:117px; }
 
-  /* 槽位栏 */
-  #slotBar { position:absolute; left:0; right:0; top:1108px; height:170px; display:flex; justify-content:center; align-items:center; gap:6px; z-index:600; }
-  .slot { width:96px; height:108px; position:relative; }
-  .slot img { position:absolute; inset:0; width:100%; height:100%; }
+  /* 槽位栏:原版木质托盘(木栏杆 + 7 格深褐凹槽) */
+  #slotTray { position:absolute; left:50%; transform:translateX(-50%); top:1035px; width:712px; height:150px; z-index:560; }
+  .tray-rail { position:absolute; left:0; right:0; height:22px; border-radius:11px;
+               background:linear-gradient(#c89b62 0%, #a9793f 45%, #8b5a2b 100%);
+               box-shadow:0 3px 4px rgba(60,35,10,.4), inset 0 2px 2px rgba(255,255,255,.35); }
+  .tray-rail.top { top:0; } .tray-rail.bottom { bottom:0; }
+  .tray-groove { position:absolute; left:14px; right:14px; top:24px; bottom:24px; border-radius:14px;
+                 background:linear-gradient(#3a2410, #2b1a0b);
+                 box-shadow:inset 0 4px 8px rgba(0,0,0,.7), 0 2px 3px rgba(255,255,255,.25);
+                 display:flex; justify-content:space-between; padding:0 6px; }
+  .tray-post { width:16px; height:106px; margin-top:-26px; border-radius:8px 8px 3px 3px; position:relative;
+               background:linear-gradient(#d3a76e 0%, #b0803f 40%, #8b5a2b 100%);
+               box-shadow:1px 2px 3px rgba(60,35,10,.45); }
+  .tray-post::before { content:""; position:absolute; top:-14px; left:50%; transform:translateX(-50%); width:26px; height:16px; border-radius:8px;
+               background:radial-gradient(circle at 35% 35%, #e3bd85, #a9793f 75%); }
   #slotLayer { position:absolute; inset:0; }
   #slotLayer .block { width:96px; height:108px; cursor:default; }
   #slotLayer .block.crushing { animation:crushAnim .32s forwards; }
@@ -69,11 +88,11 @@
   .d-btn.gray  { background:#e8e2d5; color:#8a7a63; box-shadow:0 6px 0 #c6bda9; }
 
   /* 开场遮罩(点击开始,解锁音频) */
-  #startMask { position:absolute; inset:0; z-index:1200; background:rgba(20,60,15,.78); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:36px; }
-  #startMask h1 { font-size:76px; color:#ffe9a8; text-shadow:0 4px 0 #7a4a12, 0 8px 24px rgba(0,0,0,.4); letter-spacing:8px; }
-  #startMask .sub { font-size:28px; color:#d6f5c4; }
-  #startMask .big-btn { margin-top:30px; width:420px; height:110px; border:none; border-radius:55px; font-size:44px; font-weight:800; letter-spacing:10px; color:#fff; background:linear-gradient(#ffd45e,#f5a623); box-shadow:0 8px 0 #b97910, 0 14px 30px rgba(0,0,0,.35); cursor:pointer; animation:breath 1.6s ease-in-out infinite; }
-  @keyframes breath { 50% { transform:scale(1.06); } }
+  #startMask { position:absolute; inset:0; z-index:1200; background:rgba(30,80,20,.82); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; }
+  #startMask .title-img { width:520px; height:154px; object-fit:contain; filter:drop-shadow(0 6px 18px rgba(0,0,0,.4)); }
+  #startMask .sub { font-size:28px; color:#eaf7d8; }
+  #startMask .big-btn { margin-top:26px; width:420px; height:110px; border:none; border-radius:55px; font-size:44px; font-weight:800; letter-spacing:10px; color:#fff; background:linear-gradient(#ffd45e,#f5a623); box-shadow:0 8px 0 #b97910, 0 14px 30px rgba(0,0,0,.35); cursor:pointer; }
+  #startMask .big-btn:active { transform:scale(.95); }
   #toast { position:absolute; top:200px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.7); color:#fff; font-size:28px; padding:16px 34px; border-radius:40px; z-index:1100; opacity:0; transition:opacity .3s; pointer-events:none; white-space:nowrap; }
 </style>
 </head>
@@ -81,26 +100,39 @@
 <div id="viewport">
   <div id="stage">
     <div id="hud">
-      <div class="hud-left">
-        <div id="levelTag">第一关</div>
-        <button id="bgmBtn" title="音乐">♪</button>
-      </div>
-      <div class="props">
-        <button class="prop-btn" id="btnMoveout"><img src="assets/ui/prop-moveout.svg" alt=""><span class="p-name">移出</span><span class="p-cnt">3</span></button>
-        <button class="prop-btn" id="btnUndo"><img src="assets/ui/prop-undo.svg" alt=""><span class="p-name">撤销</span><span class="p-cnt">3</span></button>
-        <button class="prop-btn" id="btnShuffle"><img src="assets/ui/prop-shuffle.svg" alt=""><span class="p-name">洗牌</span><span class="p-cnt">3</span></button>
-      </div>
+      <div id="levelTag">第一关</div>
+      <button id="bgmBtn" title="音乐">♪</button>
+      <button id="exitBtn" title="退出"></button>
     </div>
 
     <div id="board"></div>
     <div id="moveoutArea"></div>
-    <div id="slotBar"></div>
+    <div id="slotTray">
+      <div class="tray-rail top"></div>
+      <div class="tray-groove"></div>
+      <div class="tray-rail bottom"></div>
+    </div>
     <div id="slotLayer"></div>
+
+    <div id="propsBar">
+      <button class="prop-btn" id="btnMoveout" title="移出:槽内前3块移入暂存区">
+        <svg class="p-icon" viewBox="0 0 48 48"><g fill="#ffd94e" stroke="#8a5a10" stroke-width="2.5" stroke-linejoin="round"><path d="M24 6 L38 22 H29 V40 H19 V22 H10 Z"/><rect x="4" y="42" width="40" height="4" rx="2"/></g></svg>
+        <span class="p-name">移出</span><span class="p-cnt">3</span>
+      </button>
+      <button class="prop-btn" id="btnUndo" title="撤销:退回最后入槽的块">
+        <svg class="p-icon" viewBox="0 0 48 48"><path d="M38 24 a14 14 0 1 1 -5-10.8" fill="none" stroke="#ffd94e" stroke-width="6" stroke-linecap="round"/><polyline points="28,3 34,13 23,16" fill="none" stroke="#ffd94e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="p-name">撤回</span><span class="p-cnt">3</span>
+      </button>
+      <button class="prop-btn" id="btnShuffle" title="洗牌:棋盘剩余块重新分配类型">
+        <svg class="p-icon" viewBox="0 0 48 48"><g stroke="#ffd94e" stroke-width="5.5" stroke-linecap="round" fill="none"><path d="M8 16 h8 c12 0 12 16 24 16"/><path d="M8 32 h8 c5 0 8-2 11-6"/><path d="M32 16 c4 3 6 5 8 5"/></g><polyline points="34,8 42,21 28,24" fill="none" stroke="#ffd94e" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="34,40 42,27 28,24" fill="none" stroke="#ffd94e" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="p-name">洗牌</span><span class="p-cnt">3</span>
+      </button>
+    </div>
 
     <div id="toast"></div>
     <div id="mask"></div>
     <div id="startMask">
-      <h1>羊了个羊</h1>
+      <img class="title-img" src="assets/ui/logo.png" alt="羊了个羊">
       <div class="sub">经典三消 · 复刻版</div>
       <div class="sub" style="font-size:22px;color:#a8d89a">点击下方按钮开始游戏(将开启背景音乐)</div>
       <button class="big-btn" id="startBtn">开始游戏</button>
@@ -186,13 +218,13 @@ function buildLevel(levelIdx) {
     layers.push(grid(1, 3, 10, 20));
   } else {
     /* 第二关:7 层,约 147 块,地狱难度 */
-    layers.push(grid(5, 8, 0,  4));
-    layers.push(grid(4, 7, 4,  8));
-    layers.push(grid(4, 6, 8, 12));
-    layers.push(grid(3, 5, 8, 16));
-    layers.push(grid(2, 4, 12, 20));
-    layers.push(grid(1, 3, 16, 24));
-    layers.push(grid(1, 2, 18, 28));
+    layers.push(grid(5, 8, 0,  0));
+    layers.push(grid(4, 7, 4,  4));
+    layers.push(grid(4, 6, 8,  8));
+    layers.push(grid(3, 5, 8, 12));
+    layers.push(grid(2, 4, 12, 16));
+    layers.push(grid(1, 3, 16, 20));
+    layers.push(grid(1, 2, 18, 24));
   }
   const cells = [];
   layers.forEach((arr, li) => arr.forEach(p => cells.push({ layer: li, row: p.row, col: p.col })));
@@ -221,15 +253,17 @@ const state = {
   revives: 0,
 };
 
-const boardEl = $("#board"), slotBarEl = $("#slotBar"), slotLayerEl = $("#slotLayer"), moveoutEl = $("#moveoutArea");
+const boardEl = $("#board"), slotLayerEl = $("#slotLayer"), moveoutEl = $("#moveoutArea");
 
-/* ---------- 槽位栏(空槽底图) ---------- */
+/* ---------- 槽位栏:木质托盘(7 根竖桩分隔凹槽,原版样式) ---------- */
 function renderSlotBar() {
-  slotBarEl.innerHTML = "";
+  const groove = document.querySelector(".tray-groove");
+  groove.innerHTML = "";
   for (let i = 0; i < SLOT_COUNT; i++) {
-    const d = document.createElement("div"); d.className = "slot";
-    d.innerHTML = `<img src="assets/blocks/block_bg.png" alt="">`;
-    slotBarEl.appendChild(d);
+    if (i > 0) { const post = document.createElement("div"); post.className = "tray-post"; groove.appendChild(post); }
+    const cell = document.createElement("div");
+    cell.style.flex = "1";
+    groove.appendChild(cell);
   }
 }
 
@@ -348,7 +382,7 @@ function pickBlock(b) {
   b.el.classList.remove("covered");
   slotLayerEl.appendChild(b.el);
   b.el.style.transition = "none";
-  b.el.style.transform = `translate(${x - BLOCK_W/2}px, ${120 + y - BLOCK_H/2}px) scale(1)`;
+  b.el.style.transform = `translate(${x - BLOCK_W/2}px, ${160 + y - BLOCK_H/2}px) scale(1)`;
   b.el.getBoundingClientRect(); // 强制回流
   b.el.style.transition = "transform .28s cubic-bezier(.4,.9,.5,1)";
   requestAnimationFrame(() => layoutSlot());
@@ -359,8 +393,8 @@ function pickBlock(b) {
 /* ---------- 槽位渲染与消除 ---------- */
 function layoutSlot() {
   state.slot.forEach((b, i) => {
-    const x = i * SLOT_GAP + (750 - SLOT_COUNT * SLOT_GAP) / 2 + 0;  // 居中排布
-    const y = 1108 + 6;
+    const x = i * SLOT_GAP + (750 - SLOT_COUNT * SLOT_GAP) / 2;
+    const y = 1035 + 24;
     b.el.style.zIndex = String(600 + i);
     b.el.style.transform = `translate(${x}px, ${y}px) scale(1)`;
   });
@@ -507,6 +541,12 @@ $("#bgmBtn").onclick = () => {
   $("#bgmBtn").textContent = bgmOn ? "♪" : "✕";
   if (bgmOn) startBgm(); else if (bgmAudio) bgmAudio.pause();
 };
+$("#exitBtn").onclick = () => {
+  state.running = false;
+  hideDialog();
+  $("#startMask").style.display = "flex";
+  if (bgmAudio) bgmAudio.pause();
+};
 
 /* ---------- 弹窗 ---------- */
 function showDialog(html) { const m = $("#mask"); m.innerHTML = html; m.classList.add("show"); }
@@ -554,9 +594,9 @@ window.restartLevel = () => startLevel(state.level);
 window.backToFirst = () => startLevel(0);
 window.gotoLevel = i => startLevel(i);
 
-/* ---------- 自适应缩放 ---------- */
+/* ---------- 自适应缩放(cover 铺满全屏,无留边) ---------- */
 function fitStage() {
-  const s = Math.min(innerWidth / 750, innerHeight / 1334);
+  const s = Math.max(innerWidth / 750, innerHeight / 1334);
   $("#stage").style.transform = `scale(${s})`;
 }
 addEventListener("resize", fitStage); fitStage();
