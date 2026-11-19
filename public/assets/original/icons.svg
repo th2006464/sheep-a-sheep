@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!-- 原创牌面图标集「菜园集市」:12 种蔬果,全部为本仓库原创几何图形 -->
+  <symbol id="i1" viewBox="0 0 64 64"><!-- 胡萝卜 -->
+    <g stroke="#7a4a12" stroke-width="3" stroke-linejoin="round">
+      <path d="M30 18 L52 46 Q54 50 50 52 L26 30 Z" fill="#f2803c"/>
+      <path d="M30 18 L52 46" stroke="#d96a24" stroke-width="2"/>
+      <path d="M22 12 Q28 8 34 14 Q28 20 22 12" fill="#57a63e"/>
+    </g>
+  </symbol>
+  <symbol id="i2" viewBox="0 0 64 64"><!-- 番茄 -->
+    <g stroke="#7a2020" stroke-width="3">
+      <circle cx="32" cy="36" r="20" fill="#e84c3d"/>
+      <path d="M26 16 Q32 10 38 16" fill="none" stroke="#57a63e" stroke-width="4"/>
+      <circle cx="25" cy="31" r="4" fill="#ffffff" stroke="none" opacity=".55"/>
+    </g>
+  </symbol>
+  <symbol id="i3" viewBox="0 0 64 64"><!-- 玉米 -->
+    <g stroke="#8a6a12" stroke-width="3" stroke-linejoin="round">
+      <ellipse cx="32" cy="34" rx="13" ry="21" fill="#f5c542"/>
+      <path d="M22 22 Q32 34 22 46 M32 16 Q38 34 32 52 M42 22 Q34 34 42 46" fill="none" stroke="#d9a52a" stroke-width="2"/>
+      <path d="M30 54 Q26 58 28 62" fill="none" stroke="#57a63e" stroke-width="4"/>
+    </g>
+  </symbol>
+  <symbol id="i4" viewBox="0 0 64 64"><!-- 茄子 -->
+    <g stroke="#4a2a6a" stroke-width="3" stroke-linejoin="round">
+      <path d="M36 20 Q48 30 44 46 Q40 58 30 56 Q20 52 22 40 Q24 28 36 20 Z" fill="#7c4dbd"/>
+      <path d="M34 18 Q36 10 44 10" fill="none" stroke="#57a63e" stroke-width="4"/>
+      <circle cx="32" cy="34" r="4" fill="#b78ae0" stroke="none"/>
+    </g>
+  </symbol>
+  <symbol id="i5" viewBox="0 0 64 64"><!-- 白菜 -->
+    <g stroke="#3a6a1a" stroke-width="3" stroke-linejoin="round">
+      <path d="M32 14 Q44 22 42 40 Q40 52 32 54 Q24 52 22 40 Q20 22 32 14 Z" fill="#a8d878"/>
+      <path d="M32 14 L32 54" stroke="#7ab84a" stroke-width="2"/>
+      <path d="M20 50 Q16 54 18 58 M44 50 Q48 54 46 58" fill="none" stroke="#e8f0d0" stroke-width="4"/>
+    </g>
+  </symbol>
+  <symbol id="i6" viewBox="0 0 64 64"><!-- 南瓜 -->
+    <g stroke="#9a5a12" stroke-width="3">
+      <ellipse cx="32" cy="38" rx="21" ry="17" fill="#ef9a3c"/>
+      <ellipse cx="32" cy="38" rx="8" ry="17" fill="#e0822a" stroke="none"/>
+      <path d="M28 18 Q32 14 36 18" fill="none" stroke="#6a5a2a" stroke-width="4"/>
+    </g>
+  </symbol>
+  <symbol id="i7" viewBox="0 0 64 64"><!-- 蘑菇 -->
+    <g stroke="#6a4a2a" stroke-width="3" stroke-linejoin="round">
+      <path d="M12 32 Q32 8 52 32 Q32 40 12 32 Z" fill="#e05a4a"/>
+      <circle cx="24" cy="26" r="4" fill="#fff" stroke="none"/>
+      <circle cx="40" cy="24" r="3" fill="#fff" stroke="none"/>
+      <path d="M22 34 Q22 54 26 56 L38 56 Q42 54 42 34" fill="#f0e0c8"/>
+    </g>
+  </symbol>
+  <symbol id="i8" viewBox="0 0 64 64"><!-- 辣椒 -->
+    <g stroke="#8a2a1a" stroke-width="3" stroke-linejoin="round">
+      <path d="M20 16 Q40 20 44 40 Q46 54 34 56 Q24 56 26 44 Q28 30 20 16 Z" fill="#e03a2a"/>
+      <path d="M20 14 Q18 8 24 6" fill="none" stroke="#57a63e" stroke-width="4"/>
+      <path d="M30 30 Q36 36 34 46" fill="none" stroke="#c02a1a" stroke-width="2"/>
+    </g>
+  </symbol>
+  <symbol id="i9" viewBox="0 0 64 64"><!-- 洋葱 -->
+    <g stroke="#8a4a6a" stroke-width="3">
+      <path d="M32 16 Q50 26 48 42 Q46 56 32 58 Q18 56 16 42 Q14 26 32 16 Z" fill="#d88ab8"/>
+      <path d="M32 16 Q34 8 40 6" fill="none" stroke="#a8d878" stroke-width="4"/>
+      <path d="M24 24 Q28 38 26 52 M40 24 Q36 38 38 52" fill="none" stroke="#c06a9a" stroke-width="2"/>
+    </g>
+  </symbol>
+  <symbol id="i10" viewBox="0 0 64 64"><!-- 土豆 -->
+    <g stroke="#8a6a3a" stroke-width="3">
+      <ellipse cx="32" cy="36" rx="20" ry="15" fill="#d8a860"/>
+      <circle cx="24" cy="32" r="2.5" fill="#8a6a3a" stroke="none"/>
+      <circle cx="38" cy="40" r="2.5" fill="#8a6a3a" stroke="none"/>
+      <circle cx="34" cy="28" r="2.5" fill="#8a6a3a" stroke="none"/>
+    </g>
+  </symbol>
+  <symbol id="i11" viewBox="0 0 64 64"><!-- 西兰花 -->
+    <g stroke="#2a5a1a" stroke-width="3" stroke-linejoin="round">
+      <circle cx="24" cy="28" r="9" fill="#5aa840"/>
+      <circle cx="40" cy="26" r="10" fill="#6ab84a"/>
+      <circle cx="32" cy="36" r="9" fill="#4a9838"/>
+      <path d="M28 44 L26 58 M36 44 L38 58" fill="none" stroke="#8ac860" stroke-width="5"/>
+    </g>
+  </symbol>
+  <symbol id="i12" viewBox="0 0 64 64"><!-- 蒜头 -->
+    <g stroke="#8a8a5a" stroke-width="3" stroke-linejoin="round">
+      <path d="M20 30 Q32 14 44 30 Q46 48 32 54 Q18 48 20 30 Z" fill="#f0ead8"/>
+      <path d="M32 22 L32 54 M26 24 Q24 40 26 50 M38 24 Q40 40 38 50" fill="none" stroke="#c8c0a0" stroke-width="2"/>
+      <path d="M30 18 Q32 12 36 12" fill="none" stroke="#a8d878" stroke-width="3"/>
+    </g>
+  </symbol>
+</svg>

@@ -4,610 +4,409 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#63c24d">
-<title>羊了个羊 · 复刻版</title>
+<meta name="theme-color" content="#8bc34a">
+<title>菜园叠叠消 · Sheep Match</title>
 <link rel="manifest" href="manifest.webmanifest">
 <style>
+  :root {
+    --bg-top:#cdea9c; --bg-mid:#a8d568; --bg-low:#8bc34a;
+    --card-face:#fdf6e0; --card-side:#d8c89a; --card-edge:#6b5b34;
+    --wood:#a9743f; --wood-dark:#7c5326; --groove:#3d2812;
+    --ink:#3a2f1a; --accent:#2e86de; --accent-dark:#1c5a9a;
+  }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
-  html,body { width:100%; height:100%; overflow:hidden; background:#a8db5e; font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; touch-action:manipulation; }
-  #viewport { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#a8db5e; }
-  /* 原版草地背景:全屏铺满(cover 缩放,无黑边/绿框) */
-  #stage { position:relative; width:750px; height:1334px; transform-origin:center center; overflow:hidden;
-           background:
-             radial-gradient(140px 90px at 12% 22%, rgba(255,255,255,.10), transparent 70%),
-             radial-gradient(180px 110px at 85% 45%, rgba(70,130,30,.12), transparent 70%),
-             radial-gradient(160px 100px at 25% 68%, rgba(70,130,30,.10), transparent 70%),
-             linear-gradient(#c2ea7d 0%, #b4e36a 30%, #a8db5e 60%, #9cd254 100%); }
+  html,body { height:100%; overflow:hidden; }
+  body {
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    background:radial-gradient(120% 90% at 20% 0%, var(--bg-top) 0%, var(--bg-mid) 55%, var(--bg-low) 100%);
+    color:var(--ink); touch-action:manipulation;
+  }
+  /* ---------- 布局骨架:头部 / 棋盘(弹性) / 底部操作区 ---------- */
+  #app { height:100dvh; display:flex; flex-direction:column;
+         padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  header { flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:10px 14px; }
+  #levelTag { background:#2b2620; color:#ffe9b0; font-weight:700; font-size:clamp(14px,3.8vw,20px);
+              padding:6px 18px; border-radius:999px; letter-spacing:.2em; box-shadow:0 2px 0 rgba(0,0,0,.25); }
+  header .spacer { flex:1; }
+  .icon-btn { width:40px; height:40px; border:none; border-radius:12px; cursor:pointer;
+              background:linear-gradient(#64a8f0,#2e86de); color:#fff; font-size:19px;
+              box-shadow:0 3px 0 var(--accent-dark); display:flex; align-items:center; justify-content:center; }
+  .icon-btn:active { transform:translateY(2px); box-shadow:0 1px 0 var(--accent-dark); }
+  .icon-btn.off { filter:grayscale(1) brightness(.8); }
+  .icon-btn:focus-visible, .tile:focus-visible, .prop-btn:focus-visible { outline:3px solid #fff59d; outline-offset:2px; }
 
-  /* 顶部:黑色胶囊横幅(原版样式) + 左设置/右退出 */
-  #hud { position:absolute; top:0; left:0; right:0; height:150px; z-index:900; pointer-events:none; }
-  #levelTag { position:absolute; top:26px; left:50%; transform:translateX(-50%); background:#1d1a16; color:#fff; font-size:30px; font-weight:700; padding:14px 44px; border-radius:40px; letter-spacing:4px; border:3px solid #4c443a; box-shadow:0 4px 10px rgba(0,0,0,.3); }
-  #levelTag::after { content:""; position:absolute; bottom:-26px; left:50%; transform:translateX(-50%); width:16px; height:26px; background:#1d1a16; border:3px solid #4c443a; border-top:none; border-radius:0 0 8px 8px; }
-  #bgmBtn { position:absolute; top:24px; left:24px; width:72px; height:72px; border:none; border-radius:16px; background:linear-gradient(#59a7f0,#2e86e0); color:#fff; font-size:32px; cursor:pointer; box-shadow:0 4px 0 #1c5a9a, inset 0 2px 4px rgba(255,255,255,.4); pointer-events:auto; }
-  #bgmBtn:active { transform:translateY(2px); }
-  #exitBtn { position:absolute; top:24px; right:24px; width:69px; height:73px; border:none; background:url('assets/ui/exit.png') center/contain no-repeat; cursor:pointer; pointer-events:auto; transition:transform .08s; }
-  #exitBtn:active { transform:scale(.9); }
+  #boardWrap { flex:1 1 auto; position:relative; overflow:hidden; min-height:0; }
+  #boardInner { position:absolute; left:0; top:0; transform-origin:0 0; }
 
-  /* 底部:原版蓝色道具按钮(propBtn 贴图) */
-  #propsBar { position:absolute; left:0; right:0; bottom:26px; display:flex; justify-content:center; gap:46px; z-index:900; }
-  .prop-btn { position:relative; width:184px; height:122px; border:none; background:url('assets/ui/propBtn.png') center/100% 100% no-repeat; cursor:pointer; transition:transform .08s; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .prop-btn:active { transform:scale(.93); }
-  .prop-btn .p-icon { width:58px; height:58px; object-fit:contain; pointer-events:none; margin-bottom:2px; }
-  .prop-btn .p-name { font-size:26px; font-weight:800; color:#fff; letter-spacing:3px; text-shadow:0 2px 0 rgba(0,0,0,.35); pointer-events:none; }
-  .prop-btn .p-cnt { position:absolute; top:-14px; right:-6px; min-width:44px; height:44px; border-radius:22px; background:#1d1a16; color:#ffd94e; font-size:24px; font-weight:800; display:flex; align-items:center; justify-content:center; padding:0 10px; border:3px solid #fff; font-family:Arial; }
-  .prop-btn.disabled { filter:grayscale(.9) brightness(.75); }
+  /* ---------- 牌(原创样式:圆角卡 + 顶面高光 + 侧面厚度) ---------- */
+  .tile { position:absolute; width:123px; height:138px; cursor:pointer; }
+  .tile .body { position:absolute; inset:0; border-radius:16px;
+                background:linear-gradient(175deg, var(--card-face) 0%, #f4e8c8 78%, var(--card-side) 100%);
+                border:3px solid var(--card-edge); box-shadow:0 5px 0 #b8a678, 0 7px 10px rgba(40,60,10,.30); }
+  .tile .body::after { content:""; position:absolute; inset:4px 6px auto 6px; height:14%; border-radius:10px;
+                background:rgba(255,255,255,.5); }
+  .tile svg { position:absolute; left:50%; top:50%; width:74%; height:74%;
+              transform:translate(-50%,-52%); filter:drop-shadow(0 2px 1px rgba(60,40,0,.25)); }
+  .tile.covered { cursor:default; }
+  .tile.covered .body { filter:saturate(.35) brightness(.72); box-shadow:0 4px 0 #8a7a58; }
+  .tile.covered::after { content:""; position:absolute; inset:0; border-radius:16px; background:rgba(30,40,10,.28); }
+  .tile.enter { animation:dropIn .45s cubic-bezier(.25,1.3,.5,1) backwards; }
+  @keyframes dropIn { from { transform:translateY(-240px); opacity:0; } }
+  .tile.picked-anim .body { animation:pop .18s ease; }
+  @keyframes pop { 50% { transform:scale(1.1); } }
 
-  /* 棋盘区:方块直接堆在草地上(原版样式,无壁纸) */
-  #board { position:absolute; left:0; top:160px; width:750px; height:800px; z-index:10; }
-  .block { position:absolute; width:120px; height:135px; transform-origin:center; cursor:pointer; will-change:transform,opacity; }
-  .block img { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
-  .block .mask { opacity:0; transition:opacity .25s; }
-  .block.covered .mask { opacity:.62; }
-  .block.enter { animation:dropIn .5s cubic-bezier(.3,1.4,.6,1) backwards; }
-  @keyframes dropIn { from { transform:translateY(-560px) scale(1); opacity:0; } }
+  /* ---------- 暂存区 ---------- */
+  #moveoutRow { flex:0 0 auto; display:none; justify-content:center; gap:clamp(28px,12vw,90px);
+                padding:2px 0 6px; min-height:0; }
+  #moveoutRow.show { display:flex; }
+  .mo-col { position:relative; width:var(--small-w); height:var(--small-h); }
+  .mo-col .tile { width:var(--small-w); height:var(--small-h); border-radius:12px; }
+  .mo-col .tile .body { border-width:2.5px; box-shadow:0 3px 0 #b8a678; border-radius:12px; }
 
-  /* 暂存区(移出道具,位于槽位栏上方) */
-  #moveoutArea { position:absolute; left:0; right:0; top:935px; height:130px; display:none; justify-content:center; gap:220px; z-index:500; }
-  #moveoutArea.show { display:flex; }
-  .mo-col { position:relative; width:130px; height:130px; }
-  .mo-col .block { width:104px; height:117px; }
+  /* ---------- 槽位托盘(原创木盘) ---------- */
+  #tray { flex:0 0 auto; margin:4px auto 6px; width:min(96vw,520px);
+          --small-w:clamp(40px,12.4vw,68px); --small-h:clamp(45px,13.9vw,76px);
+          padding:8px 10px 10px; border-radius:20px;
+          background:linear-gradient(#c08a52,#a9743f 40%,#8a5c2e);
+          box-shadow:0 4px 0 var(--wood-dark), inset 0 2px 2px rgba(255,240,200,.5), 0 6px 14px rgba(40,60,10,.25); }
+  #trayGrooves { display:flex; gap:6px; justify-content:center; padding:8px 6px; min-height:calc(var(--small-h) + 14px);
+                 background:linear-gradient(var(--groove), #2b1b0c); border-radius:12px;
+                 box-shadow:inset 0 4px 8px rgba(0,0,0,.65); }
+  .groove { flex:1; max-width:76px; min-height:var(--small-h); border-radius:8px;
+            background:rgba(255,235,190,.06); box-shadow:inset 0 2px 5px rgba(0,0,0,.5); position:relative; }
+  #slotLayer { position:fixed; inset:0; pointer-events:none; z-index:600; }
+  #slotLayer .tile { width:var(--small-w); height:var(--small-h); cursor:default; }
+  #slotLayer .tile .body { border-radius:12px; border-width:2.5px; box-shadow:0 3px 0 #b8a678; }
+  #slotLayer .tile.crushing { animation:crushAnim .34s forwards; }
+  @keyframes crushAnim { 40% { transform:scale(1.18); filter:brightness(1.4); } 100% { transform:scale(0); opacity:0; } }
 
-  /* 槽位栏:原版木质托盘(木栏杆 + 7 格深褐凹槽) */
-  #slotTray { position:absolute; left:50%; transform:translateX(-50%); top:1035px; width:712px; height:150px; z-index:560; }
-  .tray-rail { position:absolute; left:0; right:0; height:22px; border-radius:11px;
-               background:linear-gradient(#c89b62 0%, #a9793f 45%, #8b5a2b 100%);
-               box-shadow:0 3px 4px rgba(60,35,10,.4), inset 0 2px 2px rgba(255,255,255,.35); }
-  .tray-rail.top { top:0; } .tray-rail.bottom { bottom:0; }
-  .tray-groove { position:absolute; left:14px; right:14px; top:24px; bottom:24px; border-radius:14px;
-                 background:linear-gradient(#3a2410, #2b1a0b);
-                 box-shadow:inset 0 4px 8px rgba(0,0,0,.7), 0 2px 3px rgba(255,255,255,.25);
-                 display:flex; justify-content:space-between; padding:0 6px; }
-  .tray-post { width:16px; height:106px; margin-top:-26px; border-radius:8px 8px 3px 3px; position:relative;
-               background:linear-gradient(#d3a76e 0%, #b0803f 40%, #8b5a2b 100%);
-               box-shadow:1px 2px 3px rgba(60,35,10,.45); }
-  .tray-post::before { content:""; position:absolute; top:-14px; left:50%; transform:translateX(-50%); width:26px; height:16px; border-radius:8px;
-               background:radial-gradient(circle at 35% 35%, #e3bd85, #a9793f 75%); }
-  #slotLayer { position:absolute; inset:0; }
-  #slotLayer .block { width:96px; height:108px; cursor:default; }
-  #slotLayer .block.crushing { animation:crushAnim .32s forwards; }
-  @keyframes crushAnim { 40% { transform:scale(1.22); } 100% { transform:scale(0); opacity:0; } }
+  /* ---------- 道具栏 ---------- */
+  #propsBar { flex:0 0 auto; display:flex; justify-content:center; gap:clamp(14px,5vw,34px); padding:8px 10px 12px; }
+  .prop-btn { position:relative; width:clamp(86px,26vw,124px); height:clamp(48px,13vw,62px); border:none; border-radius:16px;
+              cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+              background:linear-gradient(#66b3f5,#2e86de); box-shadow:0 4px 0 var(--accent-dark), inset 0 2px 3px rgba(255,255,255,.45);
+              color:#fff; font-size:clamp(15px,4vw,19px); font-weight:800; letter-spacing:.15em;
+              text-shadow:0 1px 0 rgba(0,0,0,.3); }
+  .prop-btn:active { transform:translateY(2px); box-shadow:0 2px 0 var(--accent-dark); }
+  .prop-btn svg { width:26px; height:26px; }
+  .prop-btn .p-cnt { position:absolute; top:-9px; right:-7px; min-width:26px; height:26px; padding:0 6px;
+              border-radius:13px; background:#2b2620; color:#ffe082; font:800 14px/26px Arial; text-align:center;
+              border:2px solid #fff; letter-spacing:0; }
+  .prop-btn.disabled { filter:grayscale(.85) brightness(.75); }
 
-  /* 弹窗 */
-  #mask { position:absolute; inset:0; background:rgba(0,0,0,.55); z-index:1000; display:none; align-items:center; justify-content:center; }
-  #mask.show { display:flex; }
-  .dialog { width:600px; background:linear-gradient(#fff8e8,#ffedb8); border-radius:28px; padding:44px 36px 36px; text-align:center; border:4px solid #b97941; box-shadow:0 10px 40px rgba(0,0,0,.35); animation:popIn .3s cubic-bezier(.3,1.5,.6,1); }
-  @keyframes popIn { from { transform:scale(.5); opacity:0; } }
-  .dialog h2 { font-size:46px; color:#8a4d1d; margin-bottom:16px; letter-spacing:4px; }
-  .dialog p { font-size:26px; color:#9a6a3c; margin-bottom:30px; line-height:1.6; }
-  .dialog .btns { display:flex; flex-direction:column; gap:18px; }
-  .d-btn { border:none; height:92px; border-radius:46px; font-size:34px; font-weight:700; letter-spacing:4px; cursor:pointer; transition:transform .08s; }
-  .d-btn:active { transform:scale(.95); }
-  .d-btn.green { background:linear-gradient(#8fe06a,#54b53a); color:#fff; box-shadow:0 6px 0 #3d8f28; }
-  .d-btn.blue  { background:linear-gradient(#7ec5ff,#3f9df0); color:#fff; box-shadow:0 6px 0 #2a6fb0; }
-  .d-btn.gray  { background:#e8e2d5; color:#8a7a63; box-shadow:0 6px 0 #c6bda9; }
+  /* ---------- 弹窗 ---------- */
+  #overlay { position:fixed; inset:0; background:rgba(20,40,10,.55); z-index:1000; display:none;
+             align-items:center; justify-content:center; padding:20px; }
+  #overlay.show { display:flex; }
+  .dialog { width:min(88vw,420px); background:linear-gradient(#fffbe8,#fdeec0); border:4px solid #b98d4f;
+            border-radius:22px; padding:28px 24px 24px; text-align:center;
+            box-shadow:0 12px 34px rgba(20,40,10,.4); animation:dlgIn .28s cubic-bezier(.3,1.4,.6,1); }
+  @keyframes dlgIn { from { transform:scale(.6); opacity:0; } }
+  .dialog h2 { font-size:clamp(24px,7vw,34px); color:#8a5a1a; letter-spacing:.2em; margin-bottom:10px; }
+  .dialog p { font-size:clamp(14px,4vw,17px); color:#9a7040; line-height:1.7; margin-bottom:20px; }
+  .dialog .btns { display:flex; flex-direction:column; gap:12px; }
+  .d-btn { border:none; height:52px; border-radius:26px; font-size:clamp(16px,4.6vw,20px); font-weight:800;
+           letter-spacing:.2em; cursor:pointer; color:#fff; }
+  .d-btn:active { transform:scale(.96); }
+  .d-btn.green { background:linear-gradient(#8fd95e,#54a832); box-shadow:0 4px 0 #3a7a20; }
+  .d-btn.blue  { background:linear-gradient(#66b3f5,#2e86de); box-shadow:0 4px 0 var(--accent-dark); }
+  .d-btn.plain { background:#efe6cf; color:#8a7a5a; box-shadow:0 4px 0 #cbbb96; }
 
-  /* 开场遮罩(点击开始,解锁音频) */
-  #startMask { position:absolute; inset:0; z-index:1200; background:rgba(30,80,20,.82); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:30px; }
-  #startMask .title-img { width:520px; height:154px; object-fit:contain; filter:drop-shadow(0 6px 18px rgba(0,0,0,.4)); }
-  #startMask .sub { font-size:28px; color:#eaf7d8; }
-  #startMask .big-btn { margin-top:26px; width:420px; height:110px; border:none; border-radius:55px; font-size:44px; font-weight:800; letter-spacing:10px; color:#fff; background:linear-gradient(#ffd45e,#f5a623); box-shadow:0 8px 0 #b97910, 0 14px 30px rgba(0,0,0,.35); cursor:pointer; }
-  #startMask .big-btn:active { transform:scale(.95); }
-  #toast { position:absolute; top:200px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.7); color:#fff; font-size:28px; padding:16px 34px; border-radius:40px; z-index:1100; opacity:0; transition:opacity .3s; pointer-events:none; white-space:nowrap; }
+  #toast { position:fixed; top:calc(env(safe-area-inset-top) + 64px); left:50%; transform:translateX(-50%);
+           background:rgba(30,30,24,.82); color:#fff; font-size:15px; padding:9px 22px; border-radius:999px;
+           z-index:1100; opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap; }
+  #hint { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom) + 8px);
+          font-size:12px; color:rgba(40,60,20,.55); letter-spacing:.05em; pointer-events:none; }
+  @media (prefers-reduced-motion: reduce) {
+    .tile.enter { animation:none; } #slotLayer .tile.crushing { animation-duration:.01s; }
+    .dialog { animation:none; }
+  }
 </style>
 </head>
 <body>
-<div id="viewport">
-  <div id="stage">
-    <div id="hud">
-      <div id="levelTag">第一关</div>
-      <button id="bgmBtn" title="音乐">♪</button>
-      <button id="exitBtn" title="退出"></button>
-    </div>
+<div id="app">
+  <header>
+    <div id="levelTag">第一关</div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="sfxBtn" title="音效开关" aria-label="音效开关">♪</button>
+    <button class="icon-btn" id="exitBtn" title="退出本局" aria-label="退出">✕</button>
+  </header>
 
-    <div id="board"></div>
-    <div id="moveoutArea"></div>
-    <div id="slotTray">
-      <div class="tray-rail top"></div>
-      <div class="tray-groove"></div>
-      <div class="tray-rail bottom"></div>
-    </div>
-    <div id="slotLayer"></div>
+  <div id="boardWrap"><div id="boardInner"></div></div>
 
-    <div id="propsBar">
-      <button class="prop-btn" id="btnMoveout" title="移出:槽内前3块移入暂存区">
-        <svg class="p-icon" viewBox="0 0 48 48"><g fill="#ffd94e" stroke="#8a5a10" stroke-width="2.5" stroke-linejoin="round"><path d="M24 6 L38 22 H29 V40 H19 V22 H10 Z"/><rect x="4" y="42" width="40" height="4" rx="2"/></g></svg>
-        <span class="p-name">移出</span><span class="p-cnt">3</span>
-      </button>
-      <button class="prop-btn" id="btnUndo" title="撤销:退回最后入槽的块">
-        <svg class="p-icon" viewBox="0 0 48 48"><path d="M38 24 a14 14 0 1 1 -5-10.8" fill="none" stroke="#ffd94e" stroke-width="6" stroke-linecap="round"/><polyline points="28,3 34,13 23,16" fill="none" stroke="#ffd94e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span class="p-name">撤回</span><span class="p-cnt">3</span>
-      </button>
-      <button class="prop-btn" id="btnShuffle" title="洗牌:棋盘剩余块重新分配类型">
-        <svg class="p-icon" viewBox="0 0 48 48"><g stroke="#ffd94e" stroke-width="5.5" stroke-linecap="round" fill="none"><path d="M8 16 h8 c12 0 12 16 24 16"/><path d="M8 32 h8 c5 0 8-2 11-6"/><path d="M32 16 c4 3 6 5 8 5"/></g><polyline points="34,8 42,21 28,24" fill="none" stroke="#ffd94e" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="34,40 42,27 28,24" fill="none" stroke="#ffd94e" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span class="p-name">洗牌</span><span class="p-cnt">3</span>
-      </button>
-    </div>
+  <div id="moveoutRow"></div>
+  <div id="tray"><div id="trayGrooves"></div></div>
 
-    <div id="toast"></div>
-    <div id="mask"></div>
-    <div id="startMask">
-      <img class="title-img" src="assets/ui/logo.png" alt="羊了个羊">
-      <div class="sub">经典三消 · 复刻版</div>
-      <div class="sub" style="font-size:22px;color:#a8d89a">点击下方按钮开始游戏(将开启背景音乐)</div>
-      <button class="big-btn" id="startBtn">开始游戏</button>
-    </div>
+  <div id="propsBar">
+    <button class="prop-btn" id="btnMoveout" title="移出:槽内前3块进入暂存区">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/><path d="M5 21h14"/></svg>
+      移出<span class="p-cnt">3</span></button>
+    <button class="prop-btn" id="btnUndo" title="撤回:退回最后入槽的牌">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+      撤回<span class="p-cnt">3</span></button>
+    <button class="prop-btn" id="btnShuffle" title="洗牌:棋盘剩余牌重新分配类型">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h4l10 10h4"/><path d="M3 17h4l3-3"/><path d="M14 7h7"/><path d="M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>
+      洗牌<span class="p-cnt">3</span></button>
   </div>
 </div>
 
-<script>
-"use strict";
-/* =========================================================
- * 羊了个羊复刻版 —— 玩法机制依据对原版 APK 的逆向分析实现:
- *   · 7 格槽位栏(failNumber=7),3 个同类型消除(CrushMatchBlockCount=3)
- *   · 入槽按类型插入:插到同类型块之后;同类型数量为 3 的倍数则排到末尾
- *   · 遮挡判定:更高层块落在 ±8 网格单位窗口内即被压(显示黑遮罩、不可点)
- *   · 道具:移出(前3块进入3列暂存区,仅每列顶块可点)、撤销(退回最后入槽
- *     的块,发生消除即清空撤销栈)、洗牌(棋盘剩余块重新分配类型)
- *   · 失败:有效槽位数 ≥7 且无可消除三连且全部落定,延迟 1 秒结算
- *   · 复活 = 使用一次"移出 3 块"
- * ========================================================= */
+<div id="slotLayer"></div>
+<div id="toast"></div>
+<div id="hint">点按明牌入槽 · 集齐三张同类即可消除</div>
+<div id="overlay"></div>
 
-const SLOT_COUNT   = 7;     // 槽位总数
-const MATCH_COUNT  = 3;     // 同类型消除数量
-const BLOCK_W      = 120, BLOCK_H = 135;   // 原版方块设计尺寸
-const SLOT_SCALE   = 0.8;                   // 入槽缩放(原版 newScale=.8)
-const SLOT_GAP     = BLOCK_W * SLOT_SCALE;  // 槽位间距 96
-const OCCLUDE_WIN  = 8;                     // 遮挡窗口:±8 网格单位
-const UNIT_X       = 750 / 64;              // 小网格单位宽(8列×8单位)
+<script type="module">
+import { buildLevel, LEVEL_COUNT } from "./levels.mjs";
+import { createGame, pick, useMoveout, useUndo, useShuffle, revive,
+         isCovered, canPick, effectiveCount, SLOT_COUNT } from "./game-core.mjs";
 
-/* ---------- 音效(原版 APK 提取) ---------- */
-const SFX = {
-  click:   "audio/click.mp3",      // clickBlock:按压可点击的块
-  crush:   "audio/crush.mp3",      // 三连消除
-  moveout: "audio/moveout.mp3",    // 移出/撤销道具
-  shuffle: "audio/shuffle.mp3",    // 洗牌道具
-  levelInit:"audio/levelInit.mp3", // 开局块下落
-  bgm:     "audio/bgm.mp3",        // 游戏内循环 BGM (game_cycle)
-  bgmMain: "audio/bgm_main.mp3",   // 主界面 BGM
-};
-const audioPool = {};
-let bgmAudio = null, bgmOn = true;
-function playSfx(name, vol = 1) {
-  try {
-    const a = audioPool[name] || (audioPool[name] = new Audio(SFX[name]));
-    a.volume = vol; a.currentTime = 0; a.play().catch(()=>{});
-  } catch (e) {}
-}
-function startBgm() {
-  if (!bgmAudio) { bgmAudio = new Audio(SFX.bgm); bgmAudio.loop = true; bgmAudio.volume = .55; }
-  bgmAudio.play().catch(()=>{});
-}
-
-/* ---------- 工具 ---------- */
-const $ = s => document.querySelector(s);
-function mulberry32(seed) {          // 种子随机(关卡可复现)
-  return function() {
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+/* ================= 原创音效(WebAudio 合成,无外部素材) ================= */
+const sfx = (() => {
+  let ctx = null, on = true;
+  const ensure = () => { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === "suspended") ctx.resume(); return ctx; };
+  function tone(freq, dur, { type = "sine", vol = .18, when = 0, slide = 0 } = {}) {
+    if (!on) return; const c = ensure();
+    const t0 = c.currentTime + when;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t0 + dur);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+    o.connect(g).connect(c.destination);
+    o.start(t0); o.stop(t0 + dur + .02);
+  }
+  return {
+    unlock() { ensure(); },
+    toggle() { on = !on; return on; },
+    click()  { tone(760, .07, { type: "triangle", vol: .15, slide: -240 }); },
+    enter()  { tone(520, .08, { type: "sine", vol: .12 }); },
+    crush()  { [660, 880, 1100].forEach((f, i) => tone(f, .12, { type: "triangle", when: i * .05, vol: .16, slide: -180 })); },
+    moveout(){ tone(300, .22, { type: "sawtooth", vol: .08, slide: 260 }); },
+    shuffle(){ for (let i = 0; i < 6; i++) tone(420 + i * 90, .05, { type: "square", when: i * .045, vol: .05 }); },
+    fail()   { tone(220, .5, { type: "sawtooth", vol: .12, slide: -120 }); },
+    win()    { [523, 659, 784, 1046].forEach((f, i) => tone(f, .22, { type: "triangle", when: i * .12, vol: .18 })); },
   };
-}
-function showToast(msg) {
-  const t = $("#toast"); t.textContent = msg; t.style.opacity = 1;
-  clearTimeout(t._tm); t._tm = setTimeout(() => t.style.opacity = 0, 1600);
-}
-function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
+})();
 
-/* ---------- 关卡设计(原创布局:层数 + 网格单位行列) ---------- */
-/* 每块: {layer, row, col} —— row/col 为 8 单位/块的网格坐标,层间错位形成半重叠 */
-function buildLevel(levelIdx) {
-  const layers = [];
-  function grid(rows, cols, offRow, offCol) {
-    const arr = [];
-    for (let r = 0; r < rows; r++)
-      for (let c = 0; c < cols; c++)
-        arr.push({ row: offRow + r * 8, col: offCol + c * 8 });
-    return arr;
-  }
-  if (levelIdx === 0) {
-    /* 第一关:3 层,约 48 块,简单热身 */
-    layers.push(grid(4, 6, 0,  8));
-    layers.push(grid(3, 5, 4, 14));
-    layers.push(grid(1, 3, 10, 20));
-  } else {
-    /* 第二关:7 层,约 147 块,地狱难度 */
-    layers.push(grid(5, 8, 0,  0));
-    layers.push(grid(4, 7, 4,  4));
-    layers.push(grid(4, 6, 8,  8));
-    layers.push(grid(3, 5, 8, 12));
-    layers.push(grid(2, 4, 12, 16));
-    layers.push(grid(1, 3, 16, 20));
-    layers.push(grid(1, 2, 18, 24));
-  }
-  const cells = [];
-  layers.forEach((arr, li) => arr.forEach(p => cells.push({ layer: li, row: p.row, col: p.col })));
+/* ================= 视图 ================= */
+const $ = s => document.querySelector(s);
+const boardWrap = $("#boardWrap"), boardInner = $("#boardInner");
+const slotLayer = $("#slotLayer"), moveoutRow = $("#moveoutRow"), overlay = $("#overlay");
 
-  /* 分配类型:数量恒为 3 的倍数,种子洗牌 */
-  const typePool = levelIdx === 0 ? 8 : 12;           // 使用的类型数
-  const rand = mulberry32(0x5EE9 + levelIdx * 7919);
-  const nTriples = Math.floor(cells.length / MATCH_COUNT);
-  const total = nTriples * MATCH_COUNT;
-  cells.length = total;
-  const bag = [];
-  for (let i = 0; i < total; i++) bag.push(i % typePool + 1);
-  for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
-  cells.forEach((c, i) => c.type = bag[i]);
-  return cells;
-}
+const UNIT = 12;                    // 1 网格单位 = 12 设计像素
+const TILE_W = 10.24 * UNIT, TILE_H = 11.52 * UNIT;
 
-/* ---------- 游戏状态 ---------- */
-const state = {
-  level: 0, running: false, over: false,
-  blocks: [],            // 棋盘上的块
-  slot: [],              // 槽位内(有序)
-  undoStack: [],         // 撤销栈:已入槽块(消除时清空)
-  moveout: [[], [], []], // 三列暂存区
-  props: { moveout: 3, undo: 3, shuffle: 3 },
-  revives: 0,
-};
+let game = null, levelIdx = 0, flying = false;
 
-const boardEl = $("#board"), slotLayerEl = $("#slotLayer"), moveoutEl = $("#moveoutArea");
+const tileXY = t => ({ x: t.col * UNIT + 4 * UNIT, y: t.row * UNIT }); // 牌左上角(设计坐标)
 
-/* ---------- 槽位栏:木质托盘(7 根竖桩分隔凹槽,原版样式) ---------- */
-function renderSlotBar() {
-  const groove = document.querySelector(".tray-groove");
-  groove.innerHTML = "";
-  for (let i = 0; i < SLOT_COUNT; i++) {
-    if (i > 0) { const post = document.createElement("div"); post.className = "tray-post"; groove.appendChild(post); }
-    const cell = document.createElement("div");
-    cell.style.flex = "1";
-    groove.appendChild(cell);
-  }
-}
-
-/* ---------- 方块 DOM ---------- */
-function makeBlockEl(type) {
+function makeTileEl(t) {
   const el = document.createElement("div");
-  el.className = "block";
-  el.innerHTML = `<img src="assets/blocks/block_${type}.png" alt="">` +
-                 `<img class="mask" src="assets/blocks/blackMask.png" alt="">`;
+  el.className = "tile";
+  el.dataset.id = t.id;
+  el.tabIndex = 0;
+  el.setAttribute("role", "button");
+  el.setAttribute("aria-label", `牌 ${t.type}`);
+  el.innerHTML = `<div class="body"></div><svg><use href="assets/original/icons.svg#i${t.type}"/></svg>`;
+  el.addEventListener("pointerdown", () => { if (canPick(game, t.id).ok) { el.classList.add("picked-anim"); sfx.click(); } });
+  el.addEventListener("pointerup", () => act(() => pick(game, t.id)));
+  el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(() => pick(game, t.id)); } });
   return el;
 }
 
-/* ---------- 开局 ---------- */
-function startLevel(levelIdx, first = false) {
-  state.level = levelIdx; state.running = true; state.over = false;
-  state.blocks = []; state.slot = []; state.undoStack = []; state.moveout = [[], [], []];
-  boardEl.innerHTML = ""; slotLayerEl.innerHTML = ""; moveoutEl.classList.remove("show"); moveoutEl.innerHTML = "";
-  $("#levelTag").textContent = levelIdx === 0 ? "第一关" : "第二关";
-  hideDialog();
-
-  const cells = buildLevel(levelIdx);
-  cells.forEach((c, i) => {
-    const el = makeBlockEl(c.type);
-    el.classList.add("enter");
-    el.style.animationDelay = (i * 12) + "ms";
-    setTimeout(() => el.classList.remove("enter"), 800 + i * 12);
-    boardEl.appendChild(el);
-    const b = { ...c, el, inSlot: false, ready: true };
-    el.addEventListener("pointerdown", () => onPressBlock(b), { passive: true });
-    el.addEventListener("pointerup",   () => onReleaseBlock(b), { passive: true });
-    el.addEventListener("pointerleave",() => { el._pressed = false; el.style.zIndex = ""; });
-    state.blocks.push(b);
-  });
-  layoutBoard();
-  playSfx("levelInit", .8);
-  updateProps();
-}
-
-/* ---------- 棋盘布局与遮挡 ---------- */
-function boardXY(b) {
-  const unit = UNIT_X;
-  const x = b.col * unit + (750 / 8) / 2;                 // 原版:x = col*unit + 大列宽/2
-  const y = b.row * unit + BLOCK_H / 2;                   // 原版:y = row*unit + 块高/2
-  return [x, y];
-}
-function layoutBoard() {
-  for (const b of state.blocks) {
-    const [x, y] = boardXY(b);
-    b.el.style.transform = `translate(${x - BLOCK_W / 2}px, ${y - BLOCK_H / 2}px)`;
-    b.el.style.zIndex = String(100 + b.layer * 10);
-  }
-  refreshCover();
-}
-function refreshCover() {
-  for (const b of state.blocks) {
-    let covered = false;
-    for (const o of state.blocks) {
-      if (o.layer > b.layer &&
-          Math.abs(o.col - b.col) < OCCLUDE_WIN &&
-          Math.abs(o.row - b.row) < OCCLUDE_WIN) { covered = true; break; }
-    }
-    b.covered = covered;
-    b.el.classList.toggle("covered", covered);
-  }
-}
-
-/* ---------- 点击棋盘块 ---------- */
-function onPressBlock(b) {
-  if (!state.running || b.inSlot || b.covered) return;
-  b.el._pressed = true;
-  vibrate(); playSfx("click");
-  b.el.style.transform += " scale(1.12)";
-  b.el.style.zIndex = "5000";
-}
-function onReleaseBlock(b) {
-  if (!b.el._pressed) return;
-  b.el._pressed = false;
-  if (!state.running || b.inSlot || b.covered) return;
-  if (effectiveSlotCount() >= SLOT_COUNT) {  // 原版:有效槽位≥7 时弹回
-    showToast("槽位已满!");
-    layoutBoard();
+/** 单一动作入口:执行 + 播放事件 + 重渲染 */
+function act(fn) {
+  if (!game || flying) return;
+  const r = fn();
+  if (!r.ok) {
+    const tips = { "slot-full": "槽位已满!", "covered": "这张牌被压住了", "not-top": "只能点暂存区顶牌",
+                   "no-prop": "道具次数用完了", "empty-slot": "槽里没有牌", "empty-board": "棋盘上没有牌",
+                   "nothing-to-undo": "没有可撤回的牌", "not-playing": "当前不可操作" };
+    if (tips[r.reason]) toast(tips[r.reason]);
     return;
   }
-  pickBlock(b);
+  playEvents(r.events);
+  render();
 }
 
-/* ---------- 入槽(按类型插入) ---------- */
-function effectiveSlotCount() {
-  const arr = state.slot;
-  let n = arr.length;
-  for (let i = 0; i + 2 < arr.length; i++)
-    if (arr[i].type === arr[i+1].type && arr[i+1].type === arr[i+2].type) n -= 3;
-  return n;
-}
-function insertPos(type) {
-  /* 原版 getNewPosit:插到最后一个同类型之后;同类型数量为 3 的倍数则排末尾 */
-  for (let i = state.slot.length - 1; i >= 0; i--) {
-    if (state.slot[i].type === type) {
-      let same = 0;
-      for (let j = i; j >= 0; j--) if (state.slot[j].type === type) same++;
-      if (same % MATCH_COUNT === 0) break;
-      return i + 1;
-    }
-  }
-  return state.slot.length;
-}
-function pickBlock(b) {
-  state.blocks = state.blocks.filter(x => x !== b);
-  b.inSlot = true; b.fromMoveout = -1;
-  const idx = insertPos(b.type);
-  state.slot.splice(idx, 0, b);
-  state.undoStack.push(b);
-
-  /* DOM 迁移:棋盘 → 槽位层,带飞行动画 */
-  const [x, y] = boardXY(b);
-  b.el.classList.remove("covered");
-  slotLayerEl.appendChild(b.el);
-  b.el.style.transition = "none";
-  b.el.style.transform = `translate(${x - BLOCK_W/2}px, ${160 + y - BLOCK_H/2}px) scale(1)`;
-  b.el.getBoundingClientRect(); // 强制回流
-  b.el.style.transition = "transform .28s cubic-bezier(.4,.9,.5,1)";
-  requestAnimationFrame(() => layoutSlot());
-  refreshCover();
-  setTimeout(() => { checkCrush(); checkFail(); }, 320);
-}
-
-/* ---------- 槽位渲染与消除 ---------- */
-function layoutSlot() {
-  state.slot.forEach((b, i) => {
-    const x = i * SLOT_GAP + (750 - SLOT_COUNT * SLOT_GAP) / 2;
-    const y = 1035 + 24;
-    b.el.style.zIndex = String(600 + i);
-    b.el.style.transform = `translate(${x}px, ${y}px) scale(1)`;
-  });
-}
-function checkCrush() {
-  const arr = state.slot;
-  for (let i = 0; i + 2 < arr.length; i++) {
-    if (arr[i].type === arr[i+1].type && arr[i+1].type === arr[i+2].type) {
-      const trio = arr.splice(i, 3);
-      state.undoStack = [];                    // 原版:消除清空撤销栈
-      playSfx("crush");
-      trio.forEach((b, k) => {
-        b.el.classList.add("crushing");
-        b.el.style.zIndex = String(700 + k);
-        setTimeout(() => b.el.remove(), 380);
-      });
-      layoutSlot();
-      setTimeout(() => { checkCrush(); checkWin(); checkFail(); }, 300);
-      return;
-    }
-  }
-}
-function checkFail() {
-  if (state.over || !state.running) return;
-  if (effectiveSlotCount() >= SLOT_COUNT && state.slot.length >= SLOT_COUNT) {
-    state.over = true;
-    setTimeout(() => showFail(), 1000);        // 原版:延迟 1 秒结算
-  }
-}
-function checkWin() {
-  if (state.blocks.length === 0 && state.moveout.every(c => c.length === 0) && state.slot.length === 0) {
-    state.running = false;
-    if (state.level === 0) showWinNext();
-    else showWinAll();
+function playEvents(events) {
+  for (const e of events) {
+    if (e.t === "enter-slot") sfx.enter();
+    if (e.t === "crush") sfx.crush();
+    if (e.t === "enter-moveout" || e.t === "return-moveout" || e.t === "return-board") sfx.moveout();
+    if (e.t === "retype") sfx.shuffle();
+    if (e.t === "fail") sfx.fail();
+    if (e.t === "win") sfx.win();
   }
 }
 
-/* ---------- 移出道具 ---------- */
-function useMoveout() {
-  if (!state.running || state.props.moveout <= 0) return;
-  if (state.slot.length === 0) { showToast("槽位没有块"); return; }
-  state.props.moveout--;
-  const n = Math.min(state.slot.length, MATCH_COUNT);
-  const moved = state.slot.splice(0, n);
-  playSfx("moveout");
-  moved.forEach((b, i) => {
-    state.moveout[i].push(b);
-    mountMoveout(i);
-  });
-  layoutSlot();
-  updateProps();
-  setTimeout(() => { checkFail(); }, 300);
-}
-function mountMoveout(col) {
-  moveoutEl.classList.add("show");
-  while (moveoutEl.children.length < 3) {
-    const c = document.createElement("div"); c.className = "mo-col"; moveoutEl.appendChild(c);
-  }
-  const colEl = moveoutEl.children[col];
-  colEl.innerHTML = "";
-  state.moveout[col].forEach((b, i) => {
-    const top = i === state.moveout[col].length - 1;
-    b.inSlot = false; b.fromMoveout = col;
-    colEl.appendChild(b.el);
-    b.el.classList.remove("crushing");
-    b.el.style.transition = "none";
-    b.el.style.transform = `translate(${i * 5}px, ${i * 7}px)`;
-    b.el.style.zIndex = String(i);
-    b.el.classList.toggle("covered", !top);
-    if (top) {
-      b.el.onpointerdown = () => onPressBlock(b);
-      b.el.onpointerup = () => onReleaseBlock(b);
-    } else {
-      b.el.onpointerdown = b.el.onpointerup = null;
-    }
-  });
-}
-/* 统一的松开处理:棋盘块与暂存区顶块共用 */
-function onReleaseBlock(b) {
-  if (!b.el._pressed) return;
-  b.el._pressed = false;
-  if (!state.running || b.inSlot || b.covered) return;
-  if (effectiveSlotCount() >= SLOT_COUNT) { showToast("槽位已满!"); return; }
-  if (b.fromMoveout >= 0) {
-    state.moveout[b.fromMoveout] = state.moveout[b.fromMoveout].filter(x => x !== b);
-    mountMoveout(b.fromMoveout);
-    b.fromMoveout = -1;
-  }
-  pickBlock(b);
-}
-
-/* ---------- 撤销道具 ---------- */
-function useUndo() {
-  if (!state.running || state.props.undo <= 0) return;
-  const b = state.undoStack.pop();
-  if (!b) { showToast("没有可撤销的块"); return; }
-  state.props.undo--;
-  playSfx("moveout");
-  state.slot = state.slot.filter(x => x !== b);
-  b.inSlot = false;
-  layoutSlot();
-  /* 飞回棋盘原位 */
-  state.blocks.push(b);
-  boardEl.appendChild(b.el);
-  b.el.style.transition = "transform .3s ease";
-  b.el.onpointerdown = () => onPressBlock(b);
-  b.el.onpointerup = () => onReleaseBlock(b);
-  layoutBoard();
-  updateProps();
-}
-
-/* ---------- 洗牌道具 ---------- */
-function useShuffle() {
-  if (!state.running || state.props.shuffle <= 0) return;
-  if (state.blocks.length === 0) { showToast("棋盘没有块"); return; }
-  state.props.shuffle--;
-  playSfx("shuffle");
-  const types = state.blocks.map(b => b.type);
-  for (let i = types.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1)); [types[i], types[j]] = [types[j], types[i]];
-  }
-  state.blocks.forEach((b, i) => {
-    b.type = types[i];
-    b.el.classList.add("shuffling");
-    b.el.querySelector("img:not(.mask)").src = `assets/blocks/block_${b.type}.png`;
-  });
-  updateProps();
-}
-
-/* ---------- 道具 UI ---------- */
-function updateProps() {
-  const map = { btnMoveout: "moveout", btnUndo: "undo", btnShuffle: "shuffle" };
-  for (const [id, key] of Object.entries(map)) {
-    const btn = $("#" + id);
-    btn.querySelector(".p-cnt").textContent = state.props[key];
-    btn.classList.toggle("disabled", state.props[key] <= 0);
-  }
-}
-$("#btnMoveout").onclick = useMoveout;
-$("#btnUndo").onclick = useUndo;
-$("#btnShuffle").onclick = useShuffle;
-$("#bgmBtn").onclick = () => {
-  bgmOn = !bgmOn;
-  $("#bgmBtn").textContent = bgmOn ? "♪" : "✕";
-  if (bgmOn) startBgm(); else if (bgmAudio) bgmAudio.pause();
-};
-$("#exitBtn").onclick = () => {
-  state.running = false;
+/* ---------- 渲染 ---------- */
+function startLevel(idx) {
+  levelIdx = idx;
+  game = createGame(buildLevel(idx));
+  boardInner.innerHTML = ""; moveoutRow.innerHTML = ""; slotLayer.innerHTML = "";
+  $("#levelTag").textContent = idx === 0 ? "第一关" : "第二关";
   hideDialog();
-  $("#startMask").style.display = "flex";
-  if (bgmAudio) bgmAudio.pause();
-};
+  let i = 0;
+  for (const t of game.tiles.values()) {
+    const el = makeTileEl(t);
+    el.classList.add("enter");
+    el.style.animationDelay = (i++ * 10) + "ms";
+    boardInner.appendChild(el);
+  }
+  setTimeout(() => boardInner.querySelectorAll(".tile").forEach(el => el.classList.remove("enter")), 700);
+  layoutBoard(); render();
+}
+
+function layoutBoard() {
+  if (!game) return;
+  const tiles = [...game.tiles.values()].filter(t => t.area === "board");
+  if (!tiles.length && !boardInner.children.length) return;
+  // 牌阵包围盒(含边距)
+  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+  const consider = t => { const p = tileXY(t); minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+                          maxX = Math.max(maxX, p.x + TILE_W); maxY = Math.max(maxY, p.y + TILE_H); };
+  tiles.forEach(consider);
+  if (!tiles.length) { minX = minY = 0; maxX = maxY = 1; }
+  const pad = UNIT * 2;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const k = Math.min(boardWrap.clientWidth / (maxX - minX), boardWrap.clientHeight / (maxY - minY), 1.6);
+  const cx = (boardWrap.clientWidth - (maxX - minX) * k) / 2;
+  const cy = (boardWrap.clientHeight - (maxY - minY) * k) / 2;
+  boardInner.style.transform = `translate(${cx - minX * k}px, ${cy - minY * k}px) scale(${k})`;
+  for (const el of boardInner.children) {
+    const t = game.tiles.get(el.dataset.id);
+    if (t && t.area === "board") { const p = tileXY(t); el.style.left = p.x + "px"; el.style.top = p.y + "px";
+                                   el.style.zIndex = String(10 + t.layer); }
+  }
+}
+
+function render() {
+  // 棋盘牌:遮挡态
+  for (const el of boardInner.children) {
+    const t = game.tiles.get(el.dataset.id);
+    if (!t) continue;
+    if (t.area !== "board") { el.style.display = "none"; continue; }
+    el.style.display = "";
+    el.classList.toggle("covered", isCovered(game, t.id));
+  }
+  // 槽位牌:与凹槽对齐
+  slotLayer.innerHTML = "";
+  const grooves = $("#trayGrooves");
+  const smalls = getComputedStyle($("#tray")).getPropertyValue("--small-w").trim();
+  game.slot.forEach((id, i) => {
+    const t = game.tiles.get(id);
+    const el = makeTileEl(t);
+    el.classList.add("slot-tile");
+    const groove = grooves.children[i];
+    if (groove) {
+      const gr = groove.getBoundingClientRect();
+      el.style.left = (gr.left + gr.width / 2) + "px";
+      el.style.top = (gr.top + gr.height / 2) + "px";
+      el.style.transform = "translate(-50%,-50%)";
+    }
+    slotLayer.appendChild(el);
+  });
+  // 暂存区
+  moveoutRow.innerHTML = "";
+  const hasMo = game.moveout.some(c => c.length > 0);
+  moveoutRow.classList.toggle("show", hasMo);
+  game.moveout.forEach((col, ci) => {
+    const colEl = document.createElement("div"); colEl.className = "mo-col";
+    col.forEach((id, i) => {
+      const t = game.tiles.get(id);
+      const el = makeTileEl(t);
+      el.style.left = (i * 4) + "px"; el.style.top = (-i * 6) + "px";
+      el.style.zIndex = String(i);
+      const isTop = i === col.length - 1;
+      el.classList.toggle("covered", !isTop);
+      if (!isTop) { el.style.pointerEvents = "none"; }
+      colEl.appendChild(el);
+    });
+    moveoutRow.appendChild(colEl);
+  });
+  // 道具
+  const props = { btnMoveout: "moveout", btnUndo: "undo", btnShuffle: "shuffle" };
+  for (const [bid, key] of Object.entries(props)) {
+    const btn = $("#" + bid);
+    btn.querySelector(".p-cnt").textContent = game.props[key];
+    btn.classList.toggle("disabled", game.props[key] <= 0);
+  }
+  // 终局弹窗
+  if (game.phase === "won") showWin();
+  if (game.phase === "failed") showFail();
+}
 
 /* ---------- 弹窗 ---------- */
-function showDialog(html) { const m = $("#mask"); m.innerHTML = html; m.classList.add("show"); }
-function hideDialog() { $("#mask").classList.remove("show"); $("#mask").innerHTML = ""; }
-
+function showDialog(html) { overlay.innerHTML = html; overlay.classList.add("show"); }
+function hideDialog() { overlay.classList.remove("show"); overlay.innerHTML = ""; }
+function showWin() {
+  if (levelIdx + 1 < LEVEL_COUNT) {
+    showDialog(`<div class="dialog"><h2>过关!</h2><p>第${levelIdx + 1}关完成<br>下一关的牌阵更厚,小心槽位</p>
+      <div class="btns"><button class="d-btn green" id="dlgNext">进入第${levelIdx + 2}关</button></div></div>`);
+    $("#dlgNext").onclick = () => startLevel(levelIdx + 1);
+  } else {
+    showDialog(`<div class="dialog"><h2>大丰收!</h2><p>全部关卡完成<br>菜园叠叠消达成</p>
+      <div class="btns"><button class="d-btn green" id="dlgRetry">再来一局</button>
+      <button class="d-btn plain" id="dlgBack">回到第一关</button></div></div>`);
+    $("#dlgRetry").onclick = () => startLevel(levelIdx);
+    $("#dlgBack").onclick = () => startLevel(0);
+  }
+}
 function showFail() {
-  state.running = false;
-  showDialog(`<div class="dialog">
-    <h2>失败</h2>
-    <p>槽位已被填满<br>还可以复活一次哦</p>
+  const canRevive = !game.revived && game.slot.length > 0;
+  showDialog(`<div class="dialog"><h2>槽位满了</h2><p>${canRevive ? "还可以抢救一次:免费移出前 3 张" : "本局复活次数已用完"}</p>
     <div class="btns">
-      <button class="d-btn green" onclick="reviveGame()">视频复活(移出前3块)</button>
-      <button class="d-btn blue" onclick="restartLevel()">重新开始本关</button>
-      <button class="d-btn gray" onclick="backToFirst()">回到第一关</button>
+      ${canRevive ? `<button class="d-btn green" id="dlgRevive">复活(移出 3 张)</button>` : ""}
+      <button class="d-btn blue" id="dlgRestart">重新开始本关</button>
+      <button class="d-btn plain" id="dlgBack2">回到第一关</button>
     </div></div>`);
+  if (canRevive) $("#dlgRevive").onclick = () => { hideDialog(); act(() => revive(game)); };
+  $("#dlgRestart").onclick = () => startLevel(levelIdx);
+  $("#dlgBack2").onclick = () => startLevel(0);
 }
-function showWinNext() {
-  showDialog(`<div class="dialog">
-    <h2>恭喜通关</h2>
-    <p>第一关完成!<br>真正的挑战现在才开始…</p>
-    <div class="btns">
-      <button class="d-btn green" onclick="gotoLevel(1)">进入第二关</button>
-    </div></div>`);
-}
-function showWinAll() {
-  showDialog(`<div class="dialog">
-    <h2>羊了个羊!</h2>
-    <p>你竟然通关了地狱难度的第二关<br>确定不是开了挂?</p>
-    <div class="btns">
-      <button class="d-btn green" onclick="restartLevel()">再来一局</button>
-      <button class="d-btn gray" onclick="backToFirst()">回到第一关</button>
-    </div></div>`);
-}
-window.reviveGame = function() {
-  /* 原版复活 = 使用一次移出 3 块 */
-  hideDialog();
-  state.over = false; state.running = true;
-  const n = Math.min(state.slot.length, MATCH_COUNT);
-  const moved = state.slot.splice(0, n);
-  playSfx("moveout");
-  moved.forEach((b, i) => { state.moveout[i].push(b); mountMoveout(i); });
-  layoutSlot();
-};
-window.restartLevel = () => startLevel(state.level);
-window.backToFirst = () => startLevel(0);
-window.gotoLevel = i => startLevel(i);
 
-/* ---------- 自适应缩放(cover 铺满全屏,无留边) ---------- */
-function fitStage() {
-  const s = Math.max(innerWidth / 750, innerHeight / 1334);
-  $("#stage").style.transform = `scale(${s})`;
+/* ---------- 杂项 ---------- */
+let toastTimer = 0;
+function toast(msg) {
+  const el = $("#toast"); el.textContent = msg; el.style.opacity = 1;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.style.opacity = 0, 1500);
 }
-addEventListener("resize", fitStage); fitStage();
+$("#btnMoveout").onclick = () => act(() => useMoveout(game));
+$("#btnUndo").onclick = () => act(() => useUndo(game));
+$("#btnShuffle").onclick = () => act(() => useShuffle(game));
+$("#sfxBtn").onclick = () => { const on = sfx.toggle(); $("#sfxBtn").classList.toggle("off", !on); };
+$("#exitBtn").onclick = () => showDialog(`<div class="dialog"><h2>退出本局?</h2><p>当前进度将丢失</p>
+  <div class="btns"><button class="d-btn blue" id="dlgExitOk">确认退出</button>
+  <button class="d-btn plain" id="dlgExitNo">继续游戏</button></div></div>`);
+document.addEventListener("click", e => {
+  if (e.target.id === "dlgExitOk") { hideDialog(); startLevel(0); }
+  if (e.target.id === "dlgExitNo") hideDialog();
+});
+addEventListener("resize", () => { layoutBoard(); if (game) render(); });
 
-/* ---------- 启动 ---------- */
-renderSlotBar();
-$("#startBtn").onclick = () => {
-  $("#startMask").style.display = "none";
-  startBgm();
-  startLevel(0, true);
-};
+/* 空槽凹槽骨架 */
+(function initTray() {
+  const grooves = $("#trayGrooves");
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    const g = document.createElement("div"); g.className = "groove"; grooves.appendChild(g);
+  }
+})();
+
+startLevel(Math.min(Number(new URLSearchParams(location.search).get("level")) || 0, LEVEL_COUNT - 1));
+
+/* 调试/E2E:按保留解自动通关(?solve=1) */
+if (new URLSearchParams(location.search).get("solve")) {
+  window.__solve = async () => {
+    const level = buildLevel(levelIdx);
+    for (const id of level.solution) {
+      if (game.phase !== "playing") break;
+      act(() => pick(game, id));
+      await new Promise(r => setTimeout(r, 60));
+    }
+  };
+  window.__solve();
+}
 </script>
 </body>
 </html>

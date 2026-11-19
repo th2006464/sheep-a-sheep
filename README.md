@@ -1,56 +1,51 @@
-# 羊了个羊 · 网页复刻版 🐑
+# 菜园叠叠消 · Sheep Match 🥕
 
-对原版《羊了个羊》Android APK 进行逆向分析后,在 HTML5 中 **1:1 复刻其消除玩法模块** 的开源实现:原版方块美术、音效与 UI 布局,配合依据反编译代码还原的完整玩法机制。
+叠层三消网页游戏(羊了个羊类玩法)。玩法机制依据对原版 APK 的逆向分析实现(规则见下),**界面、牌面、图标与音效全部为本仓库原创**(CSS + 手绘 SVG + WebAudio 合成,无任何提取素材)。
 
-> 玩法规则(游戏机制)不受版权保护;本项目代码为原创实现。美术与音频资源提取自用户自有的 APK 副本,仅供个人学习研究,请勿商用。
+> 游戏机制(规则)不受版权保护;本项目代码与美术均为原创。逆向分析过程见 [docs/reverse-engineering-report.md](docs/reverse-engineering-report.md),改造工单见 [docs/rea-web-handoff.md](docs/rea-web-handoff.md)。
 
-## 玩法机制(逆向自原版 Cocos Creator 2.x bundle)
+## 玩法(逆向自原版 Cocos bundle 的机制)
 
-| 机制 | 实现 | 逆向依据 |
-|---|---|---|
-| 槽位栏 | **7 格**,`failNumber = 7` | `crushArea` 构造器 |
-| 消除规则 | **相邻 3 个同类型** 且全部落定即消 | `isCrushBlock()` / `CrushMatchBlockCount = 3` |
-| 入槽排序 | 插入到最后一个同类型块之后;同类型数量为 3 的倍数时排到队尾 | `getNewPosit()` |
-| 遮挡判定 | 更高层块落在 ±8 网格单位窗口内即被压(黑遮罩,不可点) | `chessboard.checkIsShow()` |
-| 槽满锁定 | 有效槽位数 ≥7 时棋盘块不可再拿 | `removeCardNode()` 闸门 |
-| 移出道具 | 槽内前 3 块进入 3 列暂存区,仅每列顶块可点回槽 | `moveOutBlock()` |
-| 撤销道具 | 退回最后入槽的块;发生消除即清空撤销栈 | `cancelOneStep()` |
-| 洗牌道具 | 棋盘剩余块类型整体重排 | `updateBlockArea()` |
-| 失败结算 | 7 格占满且无可消三连,延迟 1 秒弹窗;可"复活"(=使用一次移出) | `checkBlockCrush()` |
-| 关卡 | 第一关热身 / 第二关地狱难度(原版关卡由服务端 protobuf 下发,本地以同构布局生成) | `proto_game_map.GameMap` |
+| 机制 | 实现 |
+|---|---|
+| 7 格槽位栏(`failNumber=7`) | `game-core.mjs` `SLOT_COUNT` |
+| 相邻 3 同类型消除,互不重叠(AAAA 只消一组) | `slotTriples()` |
+| 入槽按类型插入(同类型 3 的倍数则排队尾) | `insertPos()` |
+| 遮挡判定:更高层牌落在 ±8 网格单位窗口内即被压 | `isCovered()` |
+| 槽满闸门按**有效槽数**(即将消除的三连不占) | `effectiveCount()` |
+| 移出(前 3 张进 3 列暂存区,仅顶牌可点)/ 撤回(退回原区域,消除即断栈)/ 洗牌(仅重排棋盘牌) | `useMoveout/useUndo/useShuffle` |
+| 失败:有效槽数满且无三连且暂存无可救;复活 = 免费移出一次 | `checkPhase()/revive()` |
+| 两关原创拓扑(48 / 120 张),每关附**经规则回放验证的解序列** | `levels.mjs` |
+
+## 架构
+
+```
+public/
+├── index.html        # 视图层:响应式布局、动画、音效、弹窗
+├── game-core.mjs     # 纯逻辑状态机(单一动作入口 + 事件流,无 DOM)
+├── levels.mjs        # 关卡数据:确定性生成 + 保留解(剥离顺序构造,必然可解)
+└── assets/original/  # 原创素材:12 种蔬果 SVG 图标、应用图标
+tests/
+├── levels.test.mjs       # 确定性/唯一性/类型3倍数/解回放通关
+└── game-state.test.mjs   # 三连/槽满/道具/撤回/复活/胜利条件/换局隔离
+```
+
+- **布局**:牌阵按自身包围盒整体缩放居中(`layoutBoard()`),已验收 360×800、390×844、594×1320、768×1024、1280×800 五视口零裁切。
+- **音效**:WebAudio 合成(点击/入槽/消除/移出/洗牌/失败/胜利),可关闭,无外部音频文件。
+- **可访问性**:牌与按钮支持键盘焦点(Enter/Space 拾取),`prefers-reduced-motion` 降级动画。
 
 ## 运行
 
-纯静态站,任选其一:
-
 ```bash
-# 方式一:任意静态服务器
-cd public && python3 -m http.server 8080
+node --test tests/                 # 20 项测试
+cd public && python3 -m http.server 8080   # 任一静态服务器
+# 调试:?level=1 直接进入第二关;?solve=1 按保留解自动通关演示
 
-# 方式二:Cloudflare Workers(与 mahjong.game.foxtang.com 同款部署方式)
-npm install
-npx wrangler dev      # 本地开发
-npx wrangler deploy   # 部署(需 wrangler login)
+npm install && npx wrangler dev    # Cloudflare Workers(同 mahjong.game.foxtang.com 部署方式)
+npx wrangler deploy                # 部署(自定义域名见 wrangler.jsonc routes 注释)
 ```
 
-自定义域名:在 `wrangler.jsonc` 中取消 `routes` 注释并替换为你的域名。
+## 验证记录
 
-## 目录结构
-
-```
-├── public/            # 静态站点
-│   ├── index.html     # 游戏(单文件,无依赖)
-│   ├── assets/
-│   │   ├── blocks/    # 原版 daily 主题方块图 (block_1..40 / block_bg / blackMask)
-│   │   ├── ui/        # 道具图标、PWA 图标
-│   │   └── wallpaper.png
-│   └── audio/         # 原版音效 (click/crush/moveout/shuffle/levelInit/bgm…)
-├── src/index.js       # Cloudflare Worker 入口(静态资源分发)
-└── wrangler.jsonc     # Cloudflare 部署配置
-```
-
-## 逆向分析方法
-
-1. APK 解包:`assets/assets/main/index.js` 为未加密 Cocos Creator 2.x bundle(7.2MB)
-2. 资源映射:解析 `resources/config.json` 的 Cocos 压缩 UUID(前 2 位保留 + 20 字符 base64 对 → 30 位 hex),将 `block/daily/block_N` 等逻辑路径映射到 `native/<xx>/<uuid>.png`
-3. 机制还原:定位 `crushArea` / `chessboard` / `blockPrefab` 模块,提取常量与算法(见上表)
+- `node --test`:20/20 通过(2026-11-19,Node 26.8.1)
+- 浏览器:两关解序列全流程通关;五视口 + 1280×800/360×800 第二关复验,裁切数均为 0
