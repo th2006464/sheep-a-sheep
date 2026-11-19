@@ -1,0 +1,16 @@
+{
+  "name": "sheep-a-sheep",
+  "version": "1.0.0",
+  "description": "羊了个羊网页复刻版:基于原版 APK 逆向分析还原的三消玩法(7槽/3消/移出/撤销/洗牌),原版美术与音效资源。",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "keywords": ["sheep", "match-3", "game", "cloudflare-workers", "reverse-engineering"],
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "wrangler": "^4.128.0"
+  }
+}

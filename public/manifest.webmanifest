@@ -1,0 +1,13 @@
+{
+  "name": "羊了个羊 · 复刻版",
+  "short_name": "羊了个羊",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#5aab3e",
+  "theme_color": "#63c24d",
+  "icons": [
+    { "src": "assets/ui/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/ui/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
