@@ -206,12 +206,21 @@ function makeTileEl(t) {
   el.dataset.id = t.id;
   el.tabIndex = 0;
   el.setAttribute("role", "button");
-  el.setAttribute("aria-label", `牌 ${t.type}`);
-  el.innerHTML = `<div class="body"></div><svg><use href="assets/original/icons.svg#i${t.type}"/></svg>`;
+  el.innerHTML = `<div class="body"></div><svg aria-hidden="true"><use/></svg>`;
+  updateTileFace(el, t.type);
   el.addEventListener("pointerdown", () => { if (canPick(game, t.id).ok) { el.classList.add("picked-anim"); sfx.click(); } });
   el.addEventListener("pointerup", () => act(() => pick(game, t.id)));
   el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(() => pick(game, t.id)); } });
   return el;
+}
+
+function updateTileFace(el, type) {
+  const icon = `assets/original/icons.svg#i${type}`;
+  const use = el.querySelector("use");
+  if (use.getAttribute("href") !== icon) {
+    use.setAttribute("href", icon);
+    el.setAttribute("aria-label", `牌 ${type}`);
+  }
 }
 
 /** 单一动作入口:执行 + 播放事件 + 重渲染 */
@@ -288,16 +297,21 @@ function render() {
     if (!t) continue;
     if (t.area !== "board") { el.style.display = "none"; continue; }
     el.style.display = "";
-    el.classList.toggle("covered", isCovered(game, t.id));
+    const covered = isCovered(game, t.id);
+    updateTileFace(el, t.type);
+    el.classList.toggle("covered", covered);
+    el.tabIndex = covered ? -1 : 0;
+    el.setAttribute("aria-disabled", String(covered));
   }
   // 槽位牌:与凹槽对齐
   slotLayer.innerHTML = "";
   const grooves = $("#trayGrooves");
-  const smalls = getComputedStyle($("#tray")).getPropertyValue("--small-w").trim();
   game.slot.forEach((id, i) => {
     const t = game.tiles.get(id);
     const el = makeTileEl(t);
     el.classList.add("slot-tile");
+    el.tabIndex = -1;
+    el.setAttribute("aria-disabled", "true");
     const groove = grooves.children[i];
     if (groove) {
       const gr = groove.getBoundingClientRect();
@@ -320,6 +334,8 @@ function render() {
       el.style.zIndex = String(i);
       const isTop = i === col.length - 1;
       el.classList.toggle("covered", !isTop);
+      el.tabIndex = isTop ? 0 : -1;
+      el.setAttribute("aria-disabled", String(!isTop));
       if (!isTop) { el.style.pointerEvents = "none"; }
       colEl.appendChild(el);
     });
@@ -393,7 +409,8 @@ addEventListener("resize", () => { layoutBoard(); if (game) render(); });
   }
 })();
 
-startLevel(Math.min(Number(new URLSearchParams(location.search).get("level")) || 0, LEVEL_COUNT - 1));
+const requestedLevel = Number(new URLSearchParams(location.search).get("level"));
+startLevel(Number.isInteger(requestedLevel) && requestedLevel >= 0 && requestedLevel < LEVEL_COUNT ? requestedLevel : 0);
 
 /* 调试/E2E:按保留解自动通关(?solve=1) */
 if (new URLSearchParams(location.search).get("solve")) {
